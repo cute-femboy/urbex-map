@@ -3,33 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Карта Заброшек</title>
+    <title>Urbex map</title>
     <link rel="stylesheet" href="https://unpkg.com" />
     <script src="https://unpkg.com"></script>
     <style>
         body { margin: 0; padding: 0; background: #111; font-family: sans-serif; color: #fff; }
         #panel { text-align: center; padding: 15px; background: #1a1a1a; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
         #counter { font-size: 18px; font-weight: bold; color: #ff9800; margin: 5px 0; }
-        #map { height: calc(100vh - 90px); width: 100%; }
+        #map { height: calc(100vh - 90px); width: 100%; background: #111; }
         .leaflet-popup-content { color: #000; }
     </style>
 </head>
 <body>
 
     <div id="panel">
-        <div style="font-size: 20px; font-weight: bold;">🧭 Карта заброшек</div>
-        <div id="counter">📍 Найдено объектов: <span id="count">Загрузка...</span></div>
+        <div style="font-size: 20px; font-weight: bold;">🧭 Urbex map</div>
+        <div id="counter">📍 Objects: <span id="count">0</span></div>
     </div>
 
     <div id="map"></div>
 
     <script>
+        // Инициализируем карту
         const map = L.map('map').setView([55.75, 37.62], 6);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
         const SUPABASE_URL = 'https://supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkZmx3Z29saWl3cGd4ZnhxcWdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjU5Nzc0MTksImV4cCI6MjA0MTU1MzQxOX0.0'; 
 
+        // Загрузка точек из базы
         async function loadPoints() {
             try {
                 let res = await fetch(`${SUPABASE_URL}/rest/v1/points?select=*`, {
@@ -43,9 +45,12 @@
                         L.marker([p.lat, p.lng]).addTo(map).bindPopup(`<b>${p.name}</b><br>${p.description || ''}`);
                     });
                 }
-            } catch(e) { document.getElementById('count').innerText = "0"; }
+            } catch(e) { 
+                document.getElementById('count').innerText = "ошибка"; 
+            }
         }
 
+        // Клик для новой точки
         map.on('click', async function(e) {
             const lat = e.latlng.lat;
             const lng = e.latlng.lng;
@@ -53,6 +58,7 @@
             if (!name) return;
             const description = prompt("Описание объекта:") || "";
 
+            // Отрисовка на экране
             L.marker([lat, lng]).addTo(map).bindPopup(`<b>${name}</b><br>${description}`).openPopup();
             
             try {
@@ -64,15 +70,16 @@
                         'Content-Type': 'application/json',
                         'Prefer': 'return=minimal'
                     },
-                    body: JSON.stringify({ lat, lng, name, description })
+                    body: JSON.stringify({ lat, lng, name, description }) // Отправляем description вместо desc!
                 });
                 const currentCount = parseInt(document.getElementById('count').innerText) || 0;
                 document.getElementById('count').innerText = currentCount + 1;
-            } catch(err) { console.error(err); }
+            } catch(err) { 
+                console.error(err); 
+            }
         });
 
         loadPoints();
     </script>
 </body>
 </html>
-
